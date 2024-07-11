@@ -3,12 +3,14 @@ from telebot import types
 from dotenv import load_dotenv
 import os
 import sqlite3
+from icecream import ic
 
 load_dotenv()
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(BOT_TOKEN)
 user_state = {}
+ic('Starting...')
 
 
 # Commands to add? addquiz, upcoming, rsvp, leaderboard, list upcoming quizzes, reminders, deletequiz
@@ -61,6 +63,7 @@ def init_db():
 
 # Call init_db to initialize the database and create the tables
 init_db()
+ic('Database initialized')
 
 
 def insert_quiz_into_db(quiz_details):
@@ -76,7 +79,8 @@ def insert_quiz_into_db(quiz_details):
 
 @bot.message_handler(commands=['addquiz'])
 def handle_addquiz_command(message):
-    if message.chat.type == "group":
+    # Change != to == on production!!! "Dev" mode
+    if message.chat.type != "group":
         # Inform the group
         bot.send_message(message.chat.id, "A new quiz is being added by {}. Please check your private messages to "
                                           "provide the details.".format(message.from_user.first_name))
@@ -90,12 +94,17 @@ def handle_addquiz_command(message):
         bot.send_message(message.chat.id, "Please send this command in the group chat.")
 
 
-@bot.message_handler(func=lambda message: message.chat.type == 'private' and user_state.get(message.from_user.id) == "AWAITING_QUIZ_DETAILS")
+# Right now adding quiz info isn't fluent, it's a chore. Need some kind of parser to get the info from the user
+# in a better manner. For now, it'll do.
+# Needs a command to cancel the process, otherwise unless you put something in - bot will keep asking
+@bot.message_handler(func=lambda message: message.chat.type == 'private' and user_state.get(
+    message.from_user.id) == "AWAITING_QUIZ_DETAILS")
 def receive_quiz_details(message):
     # Parse the quiz details
     details = message.text.split(';')
     if len(details) != 7:
         bot.send_message(message.chat.id, "Please follow the correct format and send all required details.")
+        ic('Incorrect details format')
         return
     quiz_details = {
         "theme": details[0].strip(),
@@ -112,6 +121,37 @@ def receive_quiz_details(message):
     del user_state[message.from_user.id]
     # Confirm to the user
     bot.send_message(message.chat.id, "Quiz added successfully!")
+    ic('Quiz added, user state deleted')
+
+
+def get_quizzes_from_db():
+    conn = sqlite3.connect('quiz.db')
+    cursor = conn.cursor()
+    cursor.execute('''SELECT theme, date, time, location, organizers, description, registration_link FROM quizzes''')
+    quizzes = cursor.fetchall()
+    conn.close()
+    return quizzes
+
+# Before release have to change this so only Quiz name would be displayed initially.
+# Clicking on a name button would show the rest of the info in a message
+# Check if it's possible to send this message as "silent" and most messages from this bot, barring reminders
+@bot.message_handler(commands=['quizzes'])
+def send_quizzes(message):
+    ic('User requested list of upcoming quizzes')
+    quizzes = get_quizzes_from_db()
+    # Check if there are any quizzes
+    if not quizzes:
+        bot.send_message(message.chat.id, "No quizzes found.")
+        ic('No quizzes sent to user')
+        return
+
+    # Format the message
+    quizzes_message = "Here are the upcoming quizzes:\n\n"
+    for quiz in quizzes:
+        quizzes_message += f"Theme: {quiz[0]}\nDate: {quiz[1]}\nTime: {quiz[2]}\nLocation: {quiz[3]}\nOrganizers: {quiz[4]}\nDescription: {quiz[5]}\nRegistration Link: {quiz[6]}\n\n"
+
+    bot.send_message(message.chat.id, quizzes_message)
+    ic('Quizzes sent to user')
 
 
 def rsvp(message):
@@ -139,6 +179,5 @@ bot.polling(non_stop=True)
 # Add upcoming
 # Add list upcoming
 # Decide where to deploy - Heroku?
-# Add printf's to errorhandle
 # plan to cancel RSVPs
 # admin features? Or just manually reset bot if needed
