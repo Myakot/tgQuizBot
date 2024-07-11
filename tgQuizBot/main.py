@@ -1,19 +1,21 @@
 import telebot
-from telebot import types
 from dotenv import load_dotenv
 import os
 import sqlite3
 from icecream import ic
+from telebot import types
 
 load_dotenv()
 
 BOT_TOKEN = os.getenv('BOT_TOKEN')
 bot = telebot.TeleBot(BOT_TOKEN)
 user_state = {}
+user_pages = {}
+# Replace global variables with a better solution before prod
 ic('Starting...')
 
 
-# Commands to add? addquiz, upcoming, rsvp, leaderboard, list upcoming quizzes, reminders, deletequiz
+# Commands to add? upcoming, rsvp, leaderboard, reminders, give user access to add/delete
 # When will reminders be used? Possible to set up? A day or 2?
 # Needs functionality to change quizz time/date/location if plans have changed
 
@@ -114,12 +116,10 @@ def receive_quiz_details(message):
         "organizers": details[4].strip(),
         "description": details[5].strip(),
         "registration_link": details[6].strip()
+        # add quiz_id field to sort by later, not manually inputted, just appended
     }
-    # Insert into DB
     insert_quiz_into_db(quiz_details)
-    # Reset user state
     del user_state[message.from_user.id]
-    # Confirm to the user
     bot.send_message(message.chat.id, "Quiz added successfully!")
     ic('Quiz added, user state deleted')
 
@@ -132,14 +132,46 @@ def get_quizzes_from_db():
     conn.close()
     return quizzes
 
+
+def get_quizzes_page(page_num, page_size=4):
+    quizzes = get_quizzes_from_db()
+    # Calculate start and end index
+    start_page = (page_num - 1) * page_size
+    end_page = start_page + page_size
+    ic(f'page_num: {page_num}, start_page: {start_page}, end_page: {end_page}')
+    return quizzes[start_page:end_page]
+
+
+def update_quiz_message(call, quizzes):
+    markup = types.InlineKeyboardMarkup()
+    for quiz in quizzes:
+        button = types.InlineKeyboardButton(quiz[0], callback_data=f"quiz_{quiz[0]}")
+        markup.add(button)
+
+    # Add pagination buttons
+    page_num = user_pages.get(call.from_user.id, 1)
+    if len(get_quizzes_from_db()) > page_num * 4:
+        markup.add(types.InlineKeyboardButton("Next", callback_data="quizzes_next_" + str(page_num + 1)))
+    if page_num > 1:
+        markup.add(types.InlineKeyboardButton("Previous", callback_data="quizzes_prev_" + str(page_num - 1)))
+
+    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Select a quiz:",
+                          reply_markup=markup)
+
+
 # Before release have to change this so only Quiz name would be displayed initially.
 # Clicking on a name button would show the rest of the info in a message
 # Check if it's possible to send this message as "silent" and most messages from this bot, barring reminders
+# Need to fix pagination - first time it shows - it shows all quizzes until a button is pressed
+
 @bot.message_handler(commands=['quizzes'])
 def send_quizzes(message):
     ic('User requested list of upcoming quizzes')
     quizzes = get_quizzes_from_db()
-    # Check if there are any quizzes
+    markup = types.InlineKeyboardMarkup()
+    displayed_quizzes = quizzes[:4]
+    ic(f'Quizzes displayed: {displayed_quizzes}')
+
     if not quizzes:
         bot.send_message(message.chat.id, "No quizzes found.")
         ic('No quizzes sent to user')
@@ -148,10 +180,94 @@ def send_quizzes(message):
     # Format the message
     quizzes_message = "Here are the upcoming quizzes:\n\n"
     for quiz in quizzes:
-        quizzes_message += f"Theme: {quiz[0]}\nDate: {quiz[1]}\nTime: {quiz[2]}\nLocation: {quiz[3]}\nOrganizers: {quiz[4]}\nDescription: {quiz[5]}\nRegistration Link: {quiz[6]}\n\n"
+        # Each button text is the quiz theme, callback data could be quiz id or theme
+        button = types.InlineKeyboardButton(quiz[0], callback_data=f"quiz_{quiz[0]}")
+        markup.add(button)
 
-    bot.send_message(message.chat.id, quizzes_message)
+        # Pagination buttons
+        if len(quizzes) > 4:
+            ic('Quizzes more than 4, pagination implemented')
+            markup.add(types.InlineKeyboardButton("Next", callback_data="quizzes_next_1"))
+
+    bot.send_message(message.chat.id, "Select a quiz:", reply_markup=markup)
     ic('Quizzes sent to user')
+
+
+def get_quiz_details_by_theme(quiz_theme):
+    # need to implement the actual database query here.
+    # For example:
+    conn = sqlite3.connect('quiz.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM quizzes WHERE theme=?", (quiz_theme,))
+    quiz_details = cursor.fetchone()
+    conn.close()
+    return quiz_details
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def handle_query(call):
+    if call.data.startswith("quiz_"):
+        quiz_theme = call.data.split("_")[1]
+        # Fetch the full details of the quiz
+        quiz_details = get_quiz_details_by_theme(quiz_theme)
+        if quiz_details:
+            # Assuming quiz_details is a tuple in the order of (theme, date, time, location, organizers, description,
+            # registration_link)
+            details_message = f"You selected: {quiz_details[0]}\nDate: {quiz_details[1]}\nTime: {quiz_details[2]}\nLocation: {quiz_details[3]}\nOrganizers: {quiz_details[4]}\nDescription: {quiz_details[5]}\nRegistration Link: {quiz_details[6]}"
+            bot.send_message(call.message.chat.id, details_message)
+            ic('Quiz details sent to user')
+        else:
+            ic('Quiz details not found')
+            bot.send_message(call.message.chat.id, "Sorry, I couldn't find details for the selected quiz.")
+    elif "quizzes_next_" in call.data or "quizzes_prev_" in call.data:
+        direction, page_num = call.data.split("_")[1:]
+        page_num = int(page_num)
+        user_pages[call.from_user.id] = page_num
+
+        quizzes = get_quizzes_page(page_num)
+        update_quiz_message(call, quizzes)
+
+
+@bot.message_handler(commands=['deletequiz'])
+def handle_deletequiz_command(message):
+    ic('User is trying to delete a quiz {message.text}')
+    # Check if the user is authorized to delete quizzes
+    if not is_user_authorized(message.from_user.id):
+        ic('User no access tried to delete quizzes')
+        bot.reply_to(message, "You are not authorized to delete quizzes.")
+        return
+
+    # Assuming the command format is "/deletequiz theme"
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        bot.reply_to(message, "Please specify the quiz theme to delete.")
+        return
+    quiz_theme = args[1]
+
+    # Perform the deletion
+    if delete_quiz_by_theme(quiz_theme):
+        bot.reply_to(message, f"Quiz '{quiz_theme}' deleted successfully.")
+    else:
+        bot.reply_to(message, "Failed to delete the quiz. It might not exist.")
+
+
+def delete_quiz_by_theme(quiz_theme):
+    try:
+        conn = sqlite3.connect('quiz.db')
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM quizzes WHERE theme=?", (quiz_theme,))
+        conn.commit()
+        conn.close()
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Error deleting quiz: {e}")
+        return False
+
+
+def is_user_authorized(user_id):
+    """Check if the given user_id is authorized to delete quizzes."""
+    # Add logic here.
+    return True
 
 
 def rsvp(message):
@@ -162,11 +278,6 @@ def rsvp(message):
 def reminders(message):
     # have to be scheduled tasks that are checking for date-time and send messages to the group chat,
     # tagging everyone that rsvp'ed
-    pass
-
-
-@bot.message_handler(commands=['start'])
-def start(message):
     pass
 
 
