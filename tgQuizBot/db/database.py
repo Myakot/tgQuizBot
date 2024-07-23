@@ -97,3 +97,37 @@ def get_quiz_details_by_theme(quiz_theme):
     quiz_details = cursor.fetchone()
     conn.close()
     return quiz_details
+
+
+def rsvp_to_quiz(user_id, quiz_id, status='interested'):
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+
+        # Check if the RSVP already exists
+        cursor.execute('SELECT id FROM rsvp WHERE user_id=? AND quiz_id=?', (user_id, quiz_id))
+        if cursor.fetchone():
+            ic('User already RSVPed to this quiz', user_id, quiz_id)
+            return False  # RSVP already exists
+
+        # Insert new RSVP
+        cursor.execute('''
+        INSERT INTO rsvp (user_id, quiz_id, status) VALUES (?, ?, ?)
+        ''', (user_id, quiz_id, status))
+        conn.commit()
+        ic('RSVP successfully added')
+        return True
+    except Exception as e:
+        ic('Failed to RSVP to quiz', e)
+        return False
+    finally:
+        conn.close()
+
+
+def get_rsvp_users_by_quiz_id(quiz_id):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT user_id FROM rsvp WHERE quiz_id=?', (quiz_id,))
+    user = cursor.fetchall()
+    conn.close()
+    return user

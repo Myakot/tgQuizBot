@@ -4,11 +4,13 @@
 
 ### Feature Enhancements
 - [x] Add a check to a specified group chat, so that the bot would ONLY work in that group (tie to `config.py`).
-- [ ] Implement commands: `upcoming`, `rsvp`, `leaderboard`, `reminders`. Also, provide users access to add/delete quizzes.
+- [ ] Implement commands: `upcoming`, `rsvp`, `leaderboard`, `reminders`.
 - [ ] Add functionality to change quiz time/date/location/etc if plans have changed.
 - [ ] Add a way to add a quiz, besides just inputting seven details in a row.
 - [x] Change data field 'link' to 'quiz price'
 - [x] Initially, display only the quiz name. Clicking on a name button should show the rest of the info in a message.
+- [ ] RSVP connections to a quiz must be shown whenever the quiz info is called.
+
 
 ### Bug Fixes
 - [ ] Fix pagination - the first time it shows, it shows all quizzes until a button is pressed.
@@ -24,6 +26,8 @@
 ### Miscellaneous
 - [ ] Decide where to deploy, Heroku?
 - [ ] Replace global variables in command_handlers.py with a better solution.
+- [ ] command_handlers.py is too overloaded with functions. Split those up into separate files.
+- [ ] Docstring everything near the very end.
 
 ### Questions to Address
 - When will reminders be used?

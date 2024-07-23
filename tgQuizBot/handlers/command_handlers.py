@@ -1,7 +1,7 @@
 from tgQuizBot.config import GROUP_CHAT_ID
 from tgQuizBot.bot_instance import bot
-from tgQuizBot.db.database import (insert_quiz_into_db, delete_quiz_by_theme,
-                                   get_quizzes_from_db, get_quiz_details_by_theme)
+from tgQuizBot.db.database import (insert_quiz_into_db, delete_quiz_by_theme, get_rsvp_users_by_quiz_id,
+                                   get_quizzes_from_db, get_quiz_details_by_theme, rsvp_to_quiz)
 from telebot import types
 from icecream import ic
 
@@ -19,7 +19,7 @@ def handle_help_command(message):
         /cancel - отменить процесс добавления квиза
     /deletequiz - удалить квиз по названию Темы
     /quizzes - показать все квизы
-    /rsvp - зарегистрироваться на викторину - НЕ СДЕЛАНО, ГЛАВНЫЙ ФУНКЦИОНАЛ
+    /rsvp - зарегистрироваться на викторину. Использовать в формате /rsvp {номер квиза}
     /help - показать эту справку
     """
     bot.send_message(message.chat.id, help_text)
@@ -140,15 +140,19 @@ def handle_query(call):
         # Fetch the full details of the quiz
         quiz_details = get_quiz_details_by_theme(quiz_theme)
         if quiz_details:
+            rsvp_users = get_rsvp_users_by_quiz_id(quiz_details[7])  # The 8th element is the quiz ID
+            rsvp_users_list = "\n".join([user[0] for user in rsvp_users])  # Format the list of users
             details_message = (f"ID-квиза: {quiz_details[7]}\nТема: {quiz_details[0]}\nДата: {quiz_details[1]}\n"
                                f"Время: {quiz_details[2]}\nЛокация: {quiz_details[3]}\n"
                                f"Организаторы: {quiz_details[4]}\nОписание: {quiz_details[5]}\n"
-                               f"Цена за человека (рубли): {quiz_details[6]}")
+                               f"Цена за человека (рубли): {quiz_details[6]}\n"
+                               f"Записавшиеся пользователи:\n{rsvp_users_list}")
             bot.send_message(call.message.chat.id, details_message)
             ic('Quiz details sent to user', call.from_user.first_name)
         else:
             ic('Quiz details not found', call.from_user.first_name)
             bot.send_message(call.message.chat.id, "Прошу прощения, я не смог найти детали этого квиза.")
+
     elif "quizzes_next_" in call.data or "quizzes_prev_" in call.data:
         direction, page_num = call.data.split("_")[1:]
         page_num = int(page_num)
@@ -184,9 +188,34 @@ def get_quizzes_page(page_num, page_size=4):
     return quizzes[start_page:end_page]
 
 
+def extract_quiz_id_from_message(message):
+    ic(f'Extracting quiz ID from message: {message.text}')
+    text = message.text.strip()
+    parts = text.split()
+
+    # Check if the message is formatted correctly
+    # add isdigit() check for non-numeric IDs
+    if len(parts) == 2 and parts[0] == '/rsvp':
+        # Return the quiz ID part
+        ic(f'Extracted quiz ID: {parts[1]}')
+        return parts[1]
+    else:
+        ic('Quiz ID not found in message: {message.text}')
+        return None
+
+
+@bot.message_handler(commands=['rsvp'])
 def rsvp(message):
-    # Similar to add_quiz(message) for updating the table
-    pass
+    user_id = message.from_user.id
+    quiz_id = extract_quiz_id_from_message(message)
+    ic(f'User {user_id} rsvp to quiz {quiz_id}')
+
+    if rsvp_to_quiz(user_id, quiz_id):
+        bot.reply_to(message, "У вас получилось успешно привязаться к квизу!")
+        ic(f'User {user_id} rsvp to quiz {quiz_id} successful', message.from_user.first_name)
+    else:
+        bot.reply_to(message, "Случилась ошибка, возможно вы уже были привязаны к этому квизу.")
+        ic(f'User {user_id} rsvp to quiz {quiz_id} failed', message.from_user.first_name)
 
 
 if __name__ == "__main__":
