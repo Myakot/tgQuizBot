@@ -19,7 +19,7 @@ def init_db():
             location TEXT,
             organizers TEXT,
             description TEXT,
-            registration_link TEXT,
+            price TEXT,
             id INTEGER PRIMARY KEY AUTOINCREMENT
         )
     ''')
@@ -72,7 +72,7 @@ def get_quizzes_from_db():
     cursor = conn.cursor()
     cursor.execute(
         '''SELECT theme, date, time, location, organizers, description, 
-    registration_link, id FROM quizzes'''
+    price, id FROM quizzes'''
     )
     quizzes = cursor.fetchall()
     conn.close()
@@ -82,10 +82,10 @@ def get_quizzes_from_db():
 def insert_quiz_into_db(quiz_details):
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute('''INSERT INTO quizzes (theme, date, time, location, organizers, description, registration_link) 
+    cursor.execute('''INSERT INTO quizzes (theme, date, time, location, organizers, description, price) 
                       VALUES (?, ?, ?, ?, ?, ?, ?)''',
                    (quiz_details['theme'], quiz_details['date'], quiz_details['time'], quiz_details['location'],
-                    quiz_details['organizers'], quiz_details['description'], quiz_details['registration_link']))
+                    quiz_details['organizers'], quiz_details['description'], quiz_details['price']))
     conn.commit()
     conn.close()
 

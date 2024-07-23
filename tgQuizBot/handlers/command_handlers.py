@@ -42,7 +42,7 @@ def handle_addquiz_command(message):
                                           "предоставьте данные боту.".format(message.from_user.first_name))
         # Prompt the user in private
         bot.send_message(message.from_user.id, "Пожалуйста пришли мне детали квиза в следующем формате:\nТема; Дата; "
-                                               "Время; Локация; Организаторы; Описание; Ссылка на регистрацию.\n"
+                                               "Время; Локация; Организаторы; Описание; Цена за человека.\n"
                                                "Важно разделять каждую категорию символом ';'\n"
                                                "Если понадобится отменить операцию, напишите /cancel.")
         # Set the user's state to expecting quiz details
@@ -72,7 +72,7 @@ def receive_quiz_details(message):
         "location": details[3].strip(),
         "organizers": details[4].strip(),
         "description": details[5].strip(),
-        "registration_link": details[6].strip()
+        "price": details[6].strip()
     }
     insert_quiz_into_db(quiz_details)
     del user_state[message.from_user.id]
@@ -113,10 +113,6 @@ def handle_quizzes_command(message):
 def handle_deletequiz_command(message):
     if message.chat.type == "supergroup" and message.chat.id == int(GROUP_CHAT_ID):
         ic('User is trying to delete a quiz {message.text}', message.from_user.first_name)
-        # if not is_user_authorized(message.from_user.id):
-        #     ic('User no access tried to delete quizzes', message.from_user.first_name)
-        #     bot.reply_to(message, "У вас нет прав удалять квизы.")
-        #     return
 
         args = message.text.split(maxsplit=1)
         if len(args) < 2:
@@ -129,7 +125,7 @@ def handle_deletequiz_command(message):
             bot.reply_to(message, f"Квиз '{quiz_theme}' успешно удалён.")
             ic(f'Quiz {quiz_theme} deleted successfully', message.from_user.first_name)
         else:
-            bot.reply_to(message, "Не получилось удалить квиз. Возможно его никогда и не существовало.")
+            bot.reply_to(message, "Не получилось удалить квиз. Возможно...")
             ic(f'Failed to delete quiz {quiz_theme}', message.from_user.first_name)
     else:
         # Inform the user
@@ -144,12 +140,10 @@ def handle_query(call):
         # Fetch the full details of the quiz
         quiz_details = get_quiz_details_by_theme(quiz_theme)
         if quiz_details:
-            # Assuming quiz_details is a tuple in the order of (theme, date, time, location, organizers, description,
-            # registration_link)
             details_message = (f"ID-квиза: {quiz_details[7]}\nТема: {quiz_details[0]}\nДата: {quiz_details[1]}\n"
                                f"Время: {quiz_details[2]}\nЛокация: {quiz_details[3]}\n"
                                f"Организаторы: {quiz_details[4]}\nОписание: {quiz_details[5]}\n"
-                               f"Ссылка на регистрацию: {quiz_details[6]}")
+                               f"Цена за человека (рубли): {quiz_details[6]}")
             bot.send_message(call.message.chat.id, details_message)
             ic('Quiz details sent to user', call.from_user.first_name)
         else:
