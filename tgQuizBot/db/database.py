@@ -63,14 +63,17 @@ def delete_quiz_by_theme(quiz_theme):
         conn.close()
         return cursor.rowcount > 0
     except Exception as e:
-        print(f"Error deleting quiz: {e}")
+        ic('Failed to delete quiz', e)
         return False
 
 
 def get_quizzes_from_db():
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute('''SELECT theme, date, time, location, organizers, description, registration_link FROM quizzes''')
+    cursor.execute(
+        '''SELECT theme, date, time, location, organizers, description, 
+    registration_link, id FROM quizzes'''
+    )
     quizzes = cursor.fetchall()
     conn.close()
     return quizzes
@@ -88,7 +91,7 @@ def insert_quiz_into_db(quiz_details):
 
 
 def get_quiz_details_by_theme(quiz_theme):
-    conn = sqlite3.connect('quiz.db')
+    conn = connect_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM quizzes WHERE theme=?", (quiz_theme,))
     quiz_details = cursor.fetchone()
