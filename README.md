@@ -1,20 +1,27 @@
 # tgQuizBot
 
-# Add a check to a specified group chat, so that bot would ONLY work in that group (tie to config.py)
-# Commands to add? upcoming, rsvp, leaderboard, reminders, give user access to add/delete
-# When will reminders be used? Possible to set up? A day or 2?
-# Needs functionality to change quizz time/date/location if plans have changed
-# Before release have to change this so only Quiz name would be displayed initially.
-# Clicking on a name button would show the rest of the info in a message
-# Check if it's possible to send this message as "silent" and most messages from this bot, barring reminders
-# Need to fix pagination - first time it shows - it shows all quizzes until a button is pressed
-# Add CLI loggers of user ids that do commands in the group chat, save as a log file somewhere
+## To-Do List
 
-# Add reminders
-# Add rsvp
-# Add leaderboard
-# Add upcoming
-# Add list upcoming
-# Decide where to deploy - Heroku?
-# plan to cancel RSVPs
-# admin features? Or just manually reset bot if needed
+### Feature Enhancements
+- [x] Add a check to a specified group chat, so that the bot would ONLY work in that group (tie to `config.py`).
+- [ ] Implement commands: `upcoming`, `rsvp`, `leaderboard`, `reminders`. Also, provide users access to add/delete quizzes.
+- [ ] Add functionality to change quiz time/date/location if plans have changed.
+- [x] Initially, display only the quiz name. Clicking on a name button should show the rest of the info in a message.
+
+### Bug Fixes
+- [ ] Fix pagination - the first time it shows, it shows all quizzes until a button is pressed.
+- [ ] Check if deletion by theme is foolproof, what happens if Themes are the same, should probably add a step to select from UID.
+
+### Logging and Monitoring
+- [ ] Add CLI loggers for user ids that do commands in the group chat, save as a log file somewhere.
+- [ ] Add a log file for bot messages, errors, commands, reminders.
+
+### Reminders
+- [ ] Add reminder functionality. Decide the timing for reminder - possibly a day or two before the quiz.
+
+### Miscellaneous
+- [ ] Decide where to deploy, Heroku?
+
+### Questions to Address
+- When will reminders be used?
+- Should admin features be added for manual resets or adjustments?

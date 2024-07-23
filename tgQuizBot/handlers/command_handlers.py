@@ -38,12 +38,13 @@ def cancel_process(message):
 def handle_addquiz_command(message):
     if message.chat.type == "supergroup" and message.chat.id == int(GROUP_CHAT_ID):
         # Inform the group
-        bot.send_message(message.chat.id, "Пользователь {} добавляет новый квиз. Пожалуйста проверьте свой ЛС и "
+        bot.send_message(message.chat.id, "Пользователь {} добавляет новый квиз. Пожалуйста проверьте свои ЛС и "
                                           "предоставьте данные боту.".format(message.from_user.first_name))
         # Prompt the user in private
-        bot.send_message(message.from_user.id, "Пожалуйста пришли мне детали квиза в следующем формате: Тема; Дата; "
-                                               "Время; Локация; Организаторы; Описание; Ссылка на регистрацию."
-                                               "Важно разделять каждую категорию символом ';'")
+        bot.send_message(message.from_user.id, "Пожалуйста пришли мне детали квиза в следующем формате:\nТема; Дата; "
+                                               "Время; Локация; Организаторы; Описание; Ссылка на регистрацию.\n"
+                                               "Важно разделять каждую категорию символом ';'\n"
+                                               "Если понадобится отменить операцию, напишите /cancel.")
         # Set the user's state to expecting quiz details
         user_state[message.from_user.id] = "AWAITING_QUIZ_DETAILS"
     else:
@@ -60,7 +61,8 @@ def receive_quiz_details(message):
     # Parse the quiz details
     details = message.text.split(';')
     if len(details) != 7:
-        bot.send_message(message.chat.id, "Пожалуйста введите данные в правильном формате.")
+        bot.send_message(message.chat.id, "Пожалуйста введите данные в правильном формате."
+                                          "Если вы хотите отменить добавление квиза, напишите /cancel.")
         ic('Incorrect details format', details)
         return
     quiz_details = {
@@ -118,7 +120,7 @@ def handle_deletequiz_command(message):
 
         args = message.text.split(maxsplit=1)
         if len(args) < 2:
-            bot.reply_to(message, "Please specify the quiz theme to delete.")
+            bot.reply_to(message, "Пожалуйста назовите Тему квиза, чтобы его удалить.")
             return
         quiz_theme = args[1]
 
@@ -129,6 +131,10 @@ def handle_deletequiz_command(message):
         else:
             bot.reply_to(message, "Не получилось удалить квиз. Возможно его никогда и не существовало.")
             ic(f'Failed to delete quiz {quiz_theme}', message.from_user.first_name)
+    else:
+        # Inform the user
+        bot.send_message(message.chat.id, "Пожалуйста пришлите эту команду в главном групповом чате.")
+        ic('User tried to delete a quiz from private', message.from_user.first_name)
 
 
 @bot.callback_query_handler(func=lambda call: True)

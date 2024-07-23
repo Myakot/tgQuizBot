@@ -53,4 +53,4 @@ docs/_build/
 *.pyc
 
 # Ignore sql DB
-quiz.db
+tgQuizBot/handlers/quiz.db
