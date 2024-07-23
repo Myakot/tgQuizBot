@@ -1,6 +1,6 @@
 # tgQuizBot
 
-
+# Add a check to a specified group chat, so that bot would ONLY work in that group (tie to config.py)
 # Commands to add? upcoming, rsvp, leaderboard, reminders, give user access to add/delete
 # When will reminders be used? Possible to set up? A day or 2?
 # Needs functionality to change quizz time/date/location if plans have changed

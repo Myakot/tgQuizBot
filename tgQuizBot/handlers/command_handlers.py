@@ -1,3 +1,4 @@
+from tgQuizBot.config import GROUP_CHAT_ID
 from tgQuizBot.bot_instance import bot
 from tgQuizBot.db.database import (insert_quiz_into_db, delete_quiz_by_theme,
                                    get_quizzes_from_db, get_quiz_details_by_theme)
@@ -5,16 +6,17 @@ from tgQuizBot.util.auth import is_user_authorized
 from telebot import types
 from icecream import ic
 
+
 user_state = {}
 user_pages = {}
-
-
 # Replace global variables with a better solution in the future
 
 
 @bot.message_handler(commands=['addquiz'])
 def handle_addquiz_command(message):
+    allowed_group_chat_id = int(GROUP_CHAT_ID)
     # Change != to == on production!!! "Dev" mode
+    # if message.chat.type == "group" and message.chat.id != allowed_group_chat_id:
     if message.chat.type != "group":
         # Inform the group
         bot.send_message(message.chat.id, "A new quiz is being added by {}. Please check your private messages to "
@@ -26,7 +28,7 @@ def handle_addquiz_command(message):
         user_state[message.from_user.id] = "AWAITING_QUIZ_DETAILS"
     else:
         # Inform the user
-        bot.send_message(message.chat.id, "Please send this command in the group chat.")
+        bot.send_message(message.chat.id, "Please send this command in the specified group chat.")
 
 
 # Right now adding quiz info isn't fluent, it's a chore. Need some kind of parser to get the info from the user
