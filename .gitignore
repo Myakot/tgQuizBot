@@ -54,3 +54,4 @@ docs/_build/
 
 # Ignore sql DB
 tgQuizBot/handlers/quiz.db
+quiz.db
