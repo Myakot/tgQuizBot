@@ -16,6 +16,7 @@ def handle_help_command(message):
     help_text = """
     Список доступных команд:
     /addquiz - добавить новый квиз. Бот напишет вам в личные сообщения и попросит ввести 7 параметров квиза.
+        /cancel - отменить процесс добавления квиза
     /deletequiz - удалить квиз по названию Темы
     /quizzes - показать все квизы
     /rsvp - зарегистрироваться на викторину - НЕ СДЕЛАНО, ГЛАВНЫЙ ФУНКЦИОНАЛ
@@ -23,6 +24,14 @@ def handle_help_command(message):
     """
     bot.send_message(message.chat.id, help_text)
     ic('User requested help', message.from_user.first_name)
+
+
+@bot.message_handler(commands=['cancel'])
+def cancel_process(message):
+    if message.from_user.id in user_state:
+        del user_state[message.from_user.id]
+        bot.send_message(message.from_user.id, "Процесс добавления квиза отменён.")
+        ic('User canceled quiz adding', message.from_user.first_name)
 
 
 @bot.message_handler(commands=['addquiz'])
