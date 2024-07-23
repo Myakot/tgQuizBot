@@ -51,3 +51,6 @@ docs/_build/
 
 # Ignore all temporary *.pyc files in any project's directiories
 *.pyc
+
+# Ignore sql DB
+quiz.db
