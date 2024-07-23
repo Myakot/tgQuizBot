@@ -13,14 +13,14 @@ def init_db():
     # Create the Quizzes table
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS quizzes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
             theme TEXT,
             date TEXT,
             time TEXT,
             location TEXT,
             organizers TEXT,
             description TEXT,
-            registration_link TEXT
+            registration_link TEXT,
+            id INTEGER PRIMARY KEY AUTOINCREMENT
         )
     ''')
 

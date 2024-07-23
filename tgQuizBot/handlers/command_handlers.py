@@ -14,10 +14,10 @@ user_pages = {}
 
 @bot.message_handler(commands=['addquiz'])
 def handle_addquiz_command(message):
-    allowed_group_chat_id = int(GROUP_CHAT_ID)
-    # Change != to == on production!!! "Dev" mode
-    # if message.chat.type == "group" and message.chat.id != allowed_group_chat_id:
-    if message.chat.type != "group":
+    ic(GROUP_CHAT_ID)
+    ic(message.chat.type)
+    ic(message.chat.id)
+    if message.chat.type == "supergroup" and message.chat.id == int(GROUP_CHAT_ID):
         # Inform the group
         bot.send_message(message.chat.id, "A new quiz is being added by {}. Please check your private messages to "
                                           "provide the details.".format(message.from_user.first_name))
@@ -39,7 +39,7 @@ def handle_addquiz_command(message):
 def receive_quiz_details(message):
     # Parse the quiz details
     details = message.text.split(';')
-    if len(details) != 7:
+    if len(details) != 8:
         bot.send_message(message.chat.id, "Please follow the correct format and send all required details.")
         ic('Incorrect details format')
         return
@@ -167,3 +167,7 @@ def get_quizzes_page(page_num, page_size=4):
 def rsvp(message):
     # Similar to add_quiz(message) for updating the table
     pass
+
+
+if __name__ == "__main__":
+    bot.polling()
