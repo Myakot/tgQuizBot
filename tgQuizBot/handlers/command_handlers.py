@@ -1,7 +1,7 @@
 from tgQuizBot.config import GROUP_CHAT_ID
 from tgQuizBot.bot_instance import bot
 from tgQuizBot.db.database import (insert_quiz_into_db, delete_quiz_by_theme, get_rsvp_users_by_quiz_id,
-                                   get_quizzes_from_db, get_quiz_details_by_theme, rsvp_to_quiz)
+                                   get_quizzes_from_db, get_quiz_details_by_theme, rsvp_to_quiz, quiz_exists)
 from telebot import types
 from icecream import ic
 
@@ -209,6 +209,11 @@ def rsvp(message):
     user_id = message.from_user.id
     quiz_id = extract_quiz_id_from_message(message)
     ic(f'User {user_id} rsvp to quiz {quiz_id}')
+
+    if not quiz_id or not quiz_exists(quiz_id):
+        bot.reply_to(message, "Квиз с указанным ID не существует.")
+        ic(f'User {user_id} tried to rsvp to non-existent quiz {quiz_id}')
+        return
 
     if rsvp_to_quiz(user_id, quiz_id):
         bot.reply_to(message, "У вас получилось успешно привязаться к квизу!")

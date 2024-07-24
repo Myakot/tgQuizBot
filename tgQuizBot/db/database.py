@@ -131,3 +131,14 @@ def get_rsvp_users_by_quiz_id(quiz_id):
     user = cursor.fetchall()
     conn.close()
     return user
+
+
+def quiz_exists(quiz_id):
+    try:
+        conn = connect_db()
+        cursor = conn.cursor()
+        cursor.execute('SELECT id FROM quizzes WHERE id=?', (quiz_id,))
+        result = cursor.fetchone()
+        return result is not None
+    finally:
+        conn.close()
