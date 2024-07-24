@@ -141,7 +141,7 @@ def handle_query(call):
         quiz_details = get_quiz_details_by_theme(quiz_theme)
         if quiz_details:
             rsvp_users = get_rsvp_users_by_quiz_id(quiz_details[7])  # The 8th element is the quiz ID
-            rsvp_users_list = "\n".join([user[0] for user in rsvp_users])  # Format the list of users
+            rsvp_users_list = "\n".join([str(user[0]) for user in rsvp_users])  # Convert user IDs to strings
             details_message = (f"ID-квиза: {quiz_details[7]}\nТема: {quiz_details[0]}\nДата: {quiz_details[1]}\n"
                                f"Время: {quiz_details[2]}\nЛокация: {quiz_details[3]}\n"
                                f"Организаторы: {quiz_details[4]}\nОписание: {quiz_details[5]}\n"
