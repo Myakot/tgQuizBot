@@ -1,6 +1,6 @@
 from tgQuizBot.config import GROUP_CHAT_ID
 from tgQuizBot.bot_instance import bot
-from tgQuizBot.db.database import (insert_quiz_into_db, delete_quiz_by_theme, get_rsvp_users_by_quiz_id,
+from tgQuizBot.db.database import (insert_quiz_into_db, delete_quiz_by_theme, get_rsvp_users_by_quiz_id, insert_user,
                                    get_quizzes_from_db, get_quiz_details_by_theme, rsvp_to_quiz, quiz_exists)
 from telebot import types
 from icecream import ic
@@ -32,6 +32,17 @@ def cancel_process(message):
         del user_state[message.from_user.id]
         bot.send_message(message.from_user.id, "Процесс добавления квиза отменён.")
         ic('User canceled quiz adding', message.from_user.first_name)
+
+
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    telegram_id = message.from_user.id
+    telegram_nickname = message.from_user.username
+
+    # Insert the user into the database
+    insert_user(telegram_id, telegram_nickname)
+
+    bot.reply_to(message, "Welcome to the quiz bot!")
 
 
 @bot.message_handler(commands=['addquiz'])
@@ -141,14 +152,15 @@ def handle_query(call):
         quiz_details = get_quiz_details_by_theme(quiz_theme)
         if quiz_details:
             rsvp_users = get_rsvp_users_by_quiz_id(quiz_details[7])  # The 8th element is the quiz ID
-            rsvp_users_list = "\n".join([str(user[0]) for user in rsvp_users])  # Convert user IDs to strings
+            rsvp_users_list = "\n".join([str(user[0]) for user in rsvp_users])  # Convert user nicknames to strings
+            ic(rsvp_users_list, "converted user nicknames to strings", rsvp_users, 'rsvp_users listed!')
             details_message = (f"ID-квиза: {quiz_details[7]}\nТема: {quiz_details[0]}\nДата: {quiz_details[1]}\n"
                                f"Время: {quiz_details[2]}\nЛокация: {quiz_details[3]}\n"
                                f"Организаторы: {quiz_details[4]}\nОписание: {quiz_details[5]}\n"
                                f"Цена за человека (рубли): {quiz_details[6]}\n"
                                f"Записавшиеся пользователи:\n{rsvp_users_list}")
             bot.send_message(call.message.chat.id, details_message)
-            ic('Quiz details sent to user', call.from_user.first_name)
+            ic('Quiz details sent to user', call.from_user.first_name, rsvp_users_list)
         else:
             ic('Quiz details not found', call.from_user.first_name)
             bot.send_message(call.message.chat.id, "Прошу прощения, я не смог найти детали этого квиза.")
