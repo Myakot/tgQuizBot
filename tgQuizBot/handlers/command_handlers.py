@@ -1,9 +1,11 @@
+import requests
 from tgQuizBot.config import GROUP_CHAT_ID
 from tgQuizBot.bot_instance import bot
 from tgQuizBot.db.database import (insert_quiz_into_db, delete_quiz_by_theme, get_rsvp_users_by_quiz_id, insert_user,
                                    get_quizzes_from_db, get_quiz_details_by_theme, rsvp_to_quiz, quiz_exists)
 from telebot import types
 from icecream import ic
+from telebot import apihelper
 
 
 user_state = {}
@@ -19,7 +21,7 @@ def handle_help_command(message):
         /cancel - отменить процесс добавления квиза
     /deletequiz - удалить квиз по названию Темы
     /quizzes - показать все квизы
-    /rsvp - зарегистрироваться на викторину. Использовать в формате /rsvp {номер квиза}
+    /rsvp - зарегистрироваться на квиз. Использовать в формате /rsvp {номер квиза}
     /help - показать эту справку
     """
     bot.send_message(message.chat.id, help_text)
@@ -236,4 +238,11 @@ def rsvp(message):
 
 
 if __name__ == "__main__":
-    bot.polling()
+    while True:
+        try:
+            bot.polling(timeout=40)  # Increase timeout as needed
+        except requests.exceptions.ReadTimeout:
+            print("ReadTimeout occurred, retrying...")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
+            break
