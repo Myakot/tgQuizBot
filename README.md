@@ -3,19 +3,15 @@
 ## To-Do List
 
 ### Feature Enhancements
-- [x] Add a check to a specified group chat, so that the bot would ONLY work in that group (tie to `config.py`).
 - [ ] Implement commands: `upcoming`, `-rsvp-`, `leaderboard`, `reminders`.
 - [ ] Add functionality to change quiz time/date/location/etc if plans have changed.
-- [ ] Add a way to add a quiz, besides just inputting seven details in a row.
-- [x] Change data field 'link' to 'quiz price'
-- [x] Initially, display only the quiz name. Clicking on a name button should show the rest of the info in a message.
-- [x] RSVP connections to a quiz must be shown whenever the quiz info is called.
+- [ ] When deleting a quiz it's much easier to use buttons instead of writing text.
 
 
 ### Bug Fixes
 - [ ] Fix pagination - the first time it shows, it shows all quizzes until a button is pressed.
 - [ ] Check if deletion by theme is foolproof, what happens if Themes are the same, should probably add a step to select from UID.
-- [x] ic| f'User {user_id} rsvp to quiz {quiz_id} successful': 'User 526312291 rsvp to quiz None successful'] Shouldn't be able to rsvp to non-existent quizzes
+- [ ] Check if deleting a quiz also deletes all rsvps to it.
 
 ### Logging and Monitoring
 - [ ] Add CLI loggers for user ids that do commands in the group chat, save as a log file somewhere.
@@ -33,3 +29,11 @@
 ### Questions to Address
 - When will reminders be used?
 - Should admin features be added for manual resets or adjustments?
+
+### Done
+- [x] Add a way to add a quiz, besides just inputting seven details in a row.
+- [x] Change data field 'link' to 'quiz price'
+- [x] Initially, display only the quiz name. Clicking on a name button should show the rest of the info in a message.
+- [x] RSVP connections to a quiz must be shown whenever the quiz info is called.
+- [x] Add a check to a specified group chat, so that the bot would ONLY work in that group (tie to `config.py`).
+- [x] ic| f'User {user_id} rsvp to quiz {quiz_id} successful': 'User 526312291 rsvp to quiz None successful'] Shouldn't be able to rsvp to non-existent quizzes

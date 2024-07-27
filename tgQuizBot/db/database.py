@@ -67,6 +67,17 @@ def delete_quiz_by_theme(quiz_theme):
         return False
 
 
+def insert_user(telegram_id, telegram_nickname):
+    conn = connect_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT OR IGNORE INTO users (telegram_id, telegram_nickname)
+        VALUES (?, ?)
+    ''', (telegram_id, telegram_nickname))
+    conn.commit()
+    conn.close()
+
+
 def get_quizzes_from_db():
     conn = connect_db()
     cursor = conn.cursor()
@@ -127,10 +138,35 @@ def rsvp_to_quiz(user_id, quiz_id, status='interested'):
 def get_rsvp_users_by_quiz_id(quiz_id):
     conn = connect_db()
     cursor = conn.cursor()
-    cursor.execute('SELECT user_id FROM rsvp WHERE quiz_id=?', (quiz_id,))
-    user = cursor.fetchall()
+
+    # Debugging: Check rsvp entries for the given quiz_id
+    cursor.execute('SELECT * FROM rsvp WHERE quiz_id=?', (quiz_id,))
+    rsvp_entries = cursor.fetchall()
+    ic(rsvp_entries, 'RSVP entries for quiz_id')
+
+    # Debugging: Check all user entries
+    cursor.execute('SELECT * FROM users')
+    user_entries = cursor.fetchall()
+    ic(user_entries, 'All user entries')
+
+    # Debugging: Check if user_id exists in users table
+    cursor.execute('SELECT user_id FROM rsvp WHERE quiz_id=? AND user_id NOT IN (SELECT telegram_id FROM users)',
+                   (quiz_id,))
+    invalid_user_ids = cursor.fetchall()
+    ic(invalid_user_ids, 'Invalid user_ids in rsvp')
+
+    # Final query to get users' telegram_nickname
+    cursor.execute('''
+        SELECT users.telegram_nickname 
+        FROM rsvp
+        JOIN users ON rsvp.user_id = users.telegram_id
+        WHERE rsvp.quiz_id=?
+    ''', (quiz_id,))
+    users = cursor.fetchall()
+    ic(users, 'db function returning users')
+
     conn.close()
-    return user
+    return users
 
 
 def quiz_exists(quiz_id):
