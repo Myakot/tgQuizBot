@@ -5,11 +5,11 @@ from tgQuizBot.db.database import (insert_quiz_into_db, delete_quiz_by_theme, ge
                                    get_quizzes_from_db, get_quiz_details_by_theme, rsvp_to_quiz, quiz_exists)
 from telebot import types
 from icecream import ic
-from telebot import apihelper
 
 
 user_state = {}
 user_pages = {}
+user_quiz_data = {}
 # Replace global variables with a better solution in the future
 
 
@@ -32,8 +32,12 @@ def handle_help_command(message):
 def cancel_process(message):
     if message.from_user.id in user_state:
         del user_state[message.from_user.id]
+        if message.from_user.id in user_quiz_data:
+            del user_quiz_data[message.from_user.id]
         bot.send_message(message.from_user.id, "Процесс добавления квиза отменён.")
         ic('User canceled quiz adding', message.from_user.first_name)
+    else:
+        bot.send_message(message.from_user.id, "Нет активного процесса для отмены.")
 
 
 @bot.message_handler(commands=['start'])
@@ -44,30 +48,61 @@ def send_welcome(message):
     # Insert the user into the database
     insert_user(telegram_id, telegram_nickname)
 
-    bot.reply_to(message, "Welcome to the quiz bot!")
+    bot.reply_to(message, "Привет человекин!")
 
 
 @bot.message_handler(commands=['addquiz'])
 def handle_addquiz_command(message):
-    if message.chat.type == "supergroup" and message.chat.id == int(GROUP_CHAT_ID):
-        # Inform the group
-        bot.send_message(message.chat.id, "Пользователь {} добавляет новый квиз. Пожалуйста проверьте свои ЛС и "
-                                          "предоставьте данные боту.".format(message.from_user.first_name))
-        # Prompt the user in private
-        bot.send_message(message.from_user.id, "Пожалуйста пришли мне детали квиза в следующем формате:\nТема; Дата; "
-                                               "Время; Локация; Организаторы; Описание; Цена за человека.\n"
-                                               "Важно разделять каждую категорию символом ';'\n"
-                                               "Если понадобится отменить операцию, напишите /cancel.")
-        # Set the user's state to expecting quiz details
-        user_state[message.from_user.id] = "AWAITING_QUIZ_DETAILS"
-    else:
-        # Inform the user
-        bot.send_message(message.chat.id, "Пожалуйста пришлите эту команду в главном групповом чате.")
+    bot.send_message(message.chat.id, "Пользователь {} добавляет новый квиз. Пожалуйста проверьте свои ЛС и "
+                                      "предоставьте данные боту.".format(message.from_user.first_name))
+    bot.send_message(message.from_user.id, "Пожалуйста пришлите мне Тему квиза.")
+    user_state[message.from_user.id] = "AWAITING_QUIZ_THEME"
+    user_quiz_data[message.from_user.id] = {}
 
 
-# Right now adding quiz info isn't fluent, it's a chore. Need some kind of parser to get the info from the user
-# in a better manner. For now, it'll do.
-# Needs a command to cancel the process, otherwise unless you put something in - bot will keep asking
+@bot.message_handler(func=lambda message: message.chat.type == 'private' and message.from_user.id in user_state)
+def receive_quiz_details(message):
+    state = user_state[message.from_user.id]
+
+    if state == "AWAITING_QUIZ_THEME":
+        user_quiz_data[message.from_user.id]["theme"] = message.text.strip()
+        bot.send_message(message.chat.id, "Пожалуйста пришлите мне Дату квиза.")
+        user_state[message.from_user.id] = "AWAITING_QUIZ_DATE"
+
+    elif state == "AWAITING_QUIZ_DATE":
+        user_quiz_data[message.from_user.id]["date"] = message.text.strip()
+        bot.send_message(message.chat.id, "Пожалуйста пришлите мне Время квиза.")
+        user_state[message.from_user.id] = "AWAITING_QUIZ_TIME"
+
+    elif state == "AWAITING_QUIZ_TIME":
+        user_quiz_data[message.from_user.id]["time"] = message.text.strip()
+        bot.send_message(message.chat.id, "Пожалуйста пришлите мне Локацию квиза.")
+        user_state[message.from_user.id] = "AWAITING_QUIZ_LOCATION"
+
+    elif state == "AWAITING_QUIZ_LOCATION":
+        user_quiz_data[message.from_user.id]["location"] = message.text.strip()
+        bot.send_message(message.chat.id, "Пожалуйста пришлите мне Организаторов квиза.")
+        user_state[message.from_user.id] = "AWAITING_QUIZ_ORGANIZERS"
+
+    elif state == "AWAITING_QUIZ_ORGANIZERS":
+        user_quiz_data[message.from_user.id]["organizers"] = message.text.strip()
+        bot.send_message(message.chat.id, "Пожалуйста пришлите мне Описание квиза.")
+        user_state[message.from_user.id] = "AWAITING_QUIZ_DESCRIPTION"
+
+    elif state == "AWAITING_QUIZ_DESCRIPTION":
+        user_quiz_data[message.from_user.id]["description"] = message.text.strip()
+        bot.send_message(message.chat.id, "Пожалуйста пришлите мне Цену за человека.")
+        user_state[message.from_user.id] = "AWAITING_QUIZ_PRICE"
+
+    elif state == "AWAITING_QUIZ_PRICE":
+        user_quiz_data[message.from_user.id]["price"] = message.text.strip()
+        insert_quiz_into_db(user_quiz_data[message.from_user.id])
+        del user_state[message.from_user.id]
+        del user_quiz_data[message.from_user.id]
+        bot.send_message(message.chat.id, "Квиз добавлен успешно!")
+        ic('Quiz added, user state deleted')
+
+
 @bot.message_handler(func=lambda message: message.chat.type == 'private' and user_state.get(
     message.from_user.id) == "AWAITING_QUIZ_DETAILS")
 def receive_quiz_details(message):
@@ -124,26 +159,21 @@ def handle_quizzes_command(message):
 
 @bot.message_handler(commands=['deletequiz'])
 def handle_deletequiz_command(message):
-    if message.chat.type == "supergroup" and message.chat.id == int(GROUP_CHAT_ID):
-        ic('User is trying to delete a quiz {message.text}', message.from_user.first_name)
+    ic('User is trying to delete a quiz {message.text}', message.from_user.first_name)
 
-        args = message.text.split(maxsplit=1)
-        if len(args) < 2:
-            bot.reply_to(message, "Пожалуйста назовите Тему квиза, чтобы его удалить.")
-            return
-        quiz_theme = args[1]
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        bot.reply_to(message, "Пожалуйста назовите Тему квиза, чтобы его удалить.")
+        return
+    quiz_theme = args[1]
 
-        # Perform the deletion
-        if delete_quiz_by_theme(quiz_theme):
-            bot.reply_to(message, f"Квиз '{quiz_theme}' успешно удалён.")
-            ic(f'Quiz {quiz_theme} deleted successfully', message.from_user.first_name)
-        else:
-            bot.reply_to(message, "Не получилось удалить квиз. Возможно...")
-            ic(f'Failed to delete quiz {quiz_theme}', message.from_user.first_name)
+    # Perform the deletion
+    if delete_quiz_by_theme(quiz_theme):
+        bot.reply_to(message, f"Квиз '{quiz_theme}' успешно удалён.")
+        ic(f'Quiz {quiz_theme} deleted successfully', message.from_user.first_name)
     else:
-        # Inform the user
-        bot.send_message(message.chat.id, "Пожалуйста пришлите эту команду в главном групповом чате.")
-        ic('User tried to delete a quiz from private', message.from_user.first_name)
+        bot.reply_to(message, "Не получилось удалить квиз. Возможно...")
+        ic(f'Failed to delete quiz {quiz_theme}', message.from_user.first_name)
 
 
 @bot.callback_query_handler(func=lambda call: True)
