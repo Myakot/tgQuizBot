@@ -1,11 +1,18 @@
 import requests
 # from tgQuizBot.config import GROUP_CHAT_ID
+from tgQuizBot.util.utils import ping_users
 from tgQuizBot.bot_instance import bot
 from tgQuizBot.db.database import (insert_quiz_into_db, delete_quiz_by_theme, get_rsvp_users_by_quiz_id, insert_user,
                                    get_quizzes_from_db, get_quiz_details_by_theme, rsvp_to_quiz, quiz_exists)
 from telebot import types
 from icecream import ic
 
+
+# Example usage for pinging users:
+# user_ids = [123, 456, 789]
+# message = "Hello, users!"
+# interval = 86400  # 1 day in seconds
+# schedule_ping(user_ids, message, interval)
 
 user_state = {}
 user_pages = {}

@@ -39,13 +39,6 @@
 - [x] ic| f'User {user_id} rsvp to quiz {quiz_id} successful': 'User 526312291 rsvp to quiz None successful'] Shouldn't be able to rsvp to non-existent quizzes
 
 -----------------------------------------------------------------------------
-1. **Add a `ping` function**: Create a new function in your `utils.py` 
-module (e.g., `ping_users`) that takes a list of user IDs and sends them a 
-message with the desired text.
-2. **Schedule the ping**: Use Python's built-in `schedule` library or 
-another scheduling tool (e.g., `apscheduler`) to schedule the `ping_users` 
-function to run at a specific time interval (e.g., 1 day before the quiz 
-date).
 3. **Integrate with your quiz logic**: Modify your `quiz` module to store 
 the quiz date and time in the database, and then use this information to 
 trigger the scheduled ping.
