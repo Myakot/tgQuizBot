@@ -1,5 +1,5 @@
 import requests
-from tgQuizBot.config import GROUP_CHAT_ID
+# from tgQuizBot.config import GROUP_CHAT_ID
 from tgQuizBot.bot_instance import bot
 from tgQuizBot.db.database import (insert_quiz_into_db, delete_quiz_by_theme, get_rsvp_users_by_quiz_id, insert_user,
                                    get_quizzes_from_db, get_quiz_details_by_theme, rsvp_to_quiz, quiz_exists)
